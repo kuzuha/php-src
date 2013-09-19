@@ -1160,6 +1160,10 @@ NEWLINE ("\r"|"\n"|"\r\n")
 	return T_TRAIT;
 }
 
+<ST_IN_SCRIPTING>"definition" {
+	return T_DEFINITION;
+}
+
 <ST_IN_SCRIPTING>"extends" {
 	return T_EXTENDS;
 }

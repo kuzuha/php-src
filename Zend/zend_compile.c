@@ -1533,6 +1533,11 @@ void zend_do_begin_function_declaration(znode *function_token, znode *function_n
 				zend_error(E_COMPILE_ERROR, "Access type for interface method %s::%s() must be omitted", CG(active_class_entry)->name, Z_STRVAL(function_name->u.constant));
 			}
 			Z_LVAL(fn_flags_znode->u.constant) |= ZEND_ACC_ABSTRACT; /* propagates to the rest of the parser */
+		} else if (CG(active_class_entry)->ce_flags == ZEND_ACC_DEFINITION) {
+			if (!(Z_LVAL(fn_flags_znode->u.constant) & ZEND_ACC_PUBLIC)) {
+				zend_error(E_COMPILE_ERROR, "Access type for definition method %s::%s() must be public", CG(active_class_entry)->name, Z_STRVAL(function_name->u.constant));
+			}
+			Z_LVAL(fn_flags_znode->u.constant) |= ZEND_ACC_STATIC; /* propagates to the rest of the parser */
 		}
 		fn_flags = Z_LVAL(fn_flags_znode->u.constant); /* must be done *after* the above check */
 	} else {
@@ -4564,10 +4569,14 @@ ZEND_API zend_class_entry *do_bind_inherited_class(const zend_op_array *op_array
 		ce = *pce;
 	}
 
-	if (parent_ce->ce_flags & ZEND_ACC_INTERFACE) {
+	if ((ce->ce_flags & ZEND_ACC_DEFINITION) == ZEND_ACC_DEFINITION) {
+		zend_error(E_COMPILE_ERROR, "Definition %s cannot extend from %s", ce->name, parent_ce->name);
+	} else if (parent_ce->ce_flags & ZEND_ACC_INTERFACE) {
 		zend_error(E_COMPILE_ERROR, "Class %s cannot extend from interface %s", ce->name, parent_ce->name);
 	} else if ((parent_ce->ce_flags & ZEND_ACC_TRAIT) == ZEND_ACC_TRAIT) {
 		zend_error(E_COMPILE_ERROR, "Class %s cannot extend from trait %s", ce->name, parent_ce->name);
+	} else if ((parent_ce->ce_flags & ZEND_ACC_DEFINITION) == ZEND_ACC_DEFINITION) {
+		zend_error(E_COMPILE_ERROR, "Class %s cannot extend from definition %s", ce->name, parent_ce->name);
 	}
 
 	zend_do_inheritance(ce, parent_ce TSRMLS_CC);
@@ -5126,6 +5135,13 @@ void zend_do_implements_interface(znode *interface_name TSRMLS_DC) /* {{{ */
 							 CG(active_class_entry)->name);
 	}
 
+	/* Definitions can not implement interfaces */
+	if ((CG(active_class_entry)->ce_flags & ZEND_ACC_DEFINITION) == ZEND_ACC_DEFINITION) {
+		zend_error(E_COMPILE_ERROR, "Cannot use '%s' as interface on '%s' since it is a Definition",
+							 Z_STRVAL(interface_name->u.constant),
+							 CG(active_class_entry)->name);
+	}
+
 	switch (zend_get_class_fetch_type(Z_STRVAL(interface_name->u.constant), Z_STRLEN(interface_name->u.constant))) {
 		case ZEND_FETCH_CLASS_SELF:
 		case ZEND_FETCH_CLASS_PARENT:
@@ -5157,6 +5173,11 @@ void zend_do_use_trait(znode *trait_name TSRMLS_DC) /* {{{ */
 				Z_STRVAL(trait_name->u.constant), CG(active_class_entry)->name);
 	}
 
+	if ((CG(active_class_entry)->ce_flags & ZEND_ACC_DEFINITION) == ZEND_ACC_DEFINITION) {
+		zend_error(E_COMPILE_ERROR,
+				"Cannot use traits inside of definition. %s is used in %s",
+				Z_STRVAL(trait_name->u.constant), CG(active_class_entry)->name);
+	}
 
 	switch (zend_get_class_fetch_type(Z_STRVAL(trait_name->u.constant), Z_STRLEN(trait_name->u.constant))) {
 		case ZEND_FETCH_CLASS_SELF:
@@ -5280,6 +5301,10 @@ void zend_do_declare_property(const znode *var_name, const znode *value, zend_ui
 		comment_len = CG(doc_comment_len);
 		CG(doc_comment) = NULL;
 		CG(doc_comment_len) = 0;
+	}
+
+	if ((CG(active_class_entry)->ce_flags & ZEND_ACC_DEFINITION) == ZEND_ACC_DEFINITION) {
+		access_type |= ZEND_ACC_STATIC;
 	}
 
 	zend_declare_property_ex(CG(active_class_entry), zend_new_interned_string(Z_STRVAL(var_name->u.constant), Z_STRLEN(var_name->u.constant) + 1, 0 TSRMLS_CC), Z_STRLEN(var_name->u.constant), property, access_type, comment, comment_len TSRMLS_CC);

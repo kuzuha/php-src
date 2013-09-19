@@ -3380,6 +3380,8 @@ ZEND_VM_HANDLER(68, ZEND_NEW, ANY, ANY)
 			zend_error_noreturn(E_ERROR, "Cannot instantiate interface %s", EX_T(opline->op1.var).class_entry->name);
 		} else if ((EX_T(opline->op1.var).class_entry->ce_flags & ZEND_ACC_TRAIT) == ZEND_ACC_TRAIT) {
 			zend_error_noreturn(E_ERROR, "Cannot instantiate trait %s", EX_T(opline->op1.var).class_entry->name);
+		} else if ((EX_T(opline->op1.var).class_entry->ce_flags & ZEND_ACC_DEFINITION) == ZEND_ACC_DEFINITION) {
+			zend_error_noreturn(E_ERROR, "Cannot instantiate definition %s", EX_T(opline->op1.var).class_entry->name);
 		} else {
 			zend_error_noreturn(E_ERROR, "Cannot instantiate abstract class %s", EX_T(opline->op1.var).class_entry->name);
 		}

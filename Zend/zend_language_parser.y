@@ -183,6 +183,7 @@ static YYSIZE_T zend_yytnamerr(char*, const char*);
 %token T_HALT_COMPILER "__halt_compiler (T_HALT_COMPILER)"
 %token T_CLASS      "class (T_CLASS)"
 %token T_TRAIT      "trait (T_TRAIT)"
+%token T_DEFINITION "definition (T_DEFINITION)"
 %token T_INTERFACE  "interface (T_INTERFACE)"
 %token T_EXTENDS    "extends (T_EXTENDS)"
 %token T_IMPLEMENTS "implements (T_IMPLEMENTS)"
@@ -402,6 +403,7 @@ class_entry_type:
 		T_CLASS			{ $$.u.op.opline_num = CG(zend_lineno); $$.EA = 0; }
 	|	T_ABSTRACT T_CLASS { $$.u.op.opline_num = CG(zend_lineno); $$.EA = ZEND_ACC_EXPLICIT_ABSTRACT_CLASS; }
 	|	T_TRAIT { $$.u.op.opline_num = CG(zend_lineno); $$.EA = ZEND_ACC_TRAIT; }
+	|	T_DEFINITION { $$.u.op.opline_num = CG(zend_lineno); $$.EA = ZEND_ACC_DEFINITION; }
 	|	T_FINAL T_CLASS { $$.u.op.opline_num = CG(zend_lineno); $$.EA = ZEND_ACC_FINAL_CLASS; }
 ;
 
